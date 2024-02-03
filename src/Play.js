@@ -48,6 +48,20 @@ class Play extends Phaser.Scene {
 
         this.walls = this.add.group([wallA, wallB])
 
+        // add moving obstacle
+        this.movingObstacle = this.physics.add.sprite(width / 2, height / 3, 'wall')
+        this.movingObstacle.body.setImmovable(true)
+        this.movingObstacle.body.setVelocityX(2)
+
+        // check for screen edges and reverse direction if needed
+        this.physics.world.on('worldbounds', (body) => {
+            if (body.gameObject === this.movingObstacle) {
+                // reverse direction when hitting screen edges
+                this.movingObstacle.body.velocity.x *= -1
+            }
+        })
+
+
         // add one-way
         this.oneWay = this.physics.add.sprite(width/2, height/4*3, 'oneway')
         this.oneWay.setX(Phaser.Math.Between(0 +this.oneWay.width/2, width - this.oneWay.width/2))
@@ -56,9 +70,12 @@ class Play extends Phaser.Scene {
 
         // add pointer input
         this.input.on('pointerdown', (pointer) => {
-            let shotDirection = pointer.y <= this.ball.y ? 1 : -1
-            this.ball.body.setVelocityX(Phaser.Math.Between(-this.SHOT_VELOCITY_X, this.SHOT_VELOCITY_X))
-            this.ball.body.setVelocityY(Phaser.Math.Between(this.SHOT_VELOCITY_Y_MIN, this.SHOT_VELOCITY_Y_MAX) * shotDirection)
+            let shotDirection = pointer.x <= this.ball.x ? -1 : 1
+            // let shotDirection = pointer.y <= this.ball.y ? 1 : -1
+            this.ball.body.setVelocityX(shotDirection * Phaser.Math.Between(this.SHOT_VELOCITY_X / 2, this.SHOT_VELOCITY_X))
+            this.ball.body.setVelocityY(Phaser.Math.Between(this.SHOT_VELOCITY_Y_MIN, this.SHOT_VELOCITY_Y_MAX))
+            // this.ball.body.setVelocityX(Phaser.Math.Between(-this.SHOT_VELOCITY_X, this.SHOT_VELOCITY_X))
+            // this.ball.body.setVelocityY(Phaser.Math.Between(this.SHOT_VELOCITY_Y_MIN, this.SHOT_VELOCITY_Y_MAX) * shotDirection)
         })
 
         // cup/ball collision
@@ -69,6 +86,9 @@ class Play extends Phaser.Scene {
         // ball/wall collision
         this.physics.add.collider(this.ball, this.walls)
 
+        // ball/movable obstacle collision
+        this.physics.add.collider(this.ball, this.movingObstacle)
+
         // ball/one-way collision
         this.physics.add.collider(this.ball, this.oneWay)
         
@@ -76,6 +96,12 @@ class Play extends Phaser.Scene {
 
     update() {
 
+        this.movingObstacle.x += this.movingObstacle.body.velocity.x
+        // Check if the movable obstacle reached the screen edges
+        if (this.movingObstacle.x - this.movingObstacle.width / 2 <= 0 || this.movingObstacle.x + this.movingObstacle.width / 2 >= width) {
+            // Reverse the velocity to make it bounce
+            this.movingObstacle.body.velocity.x *= -1
+        }
     }
 
     resetBall() {
