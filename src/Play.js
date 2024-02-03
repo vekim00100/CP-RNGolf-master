@@ -9,6 +9,9 @@ class Play extends Phaser.Scene {
         this.SHOT_VELOCITY_Y_MIN = 700
         this.SHOT_VELOCITY_Y_MAX = 1100
 
+        // shot-related variables
+        this.shotCount = 0
+        this.successfulShots = 0
     }
 
     preload() {
@@ -53,14 +56,13 @@ class Play extends Phaser.Scene {
         this.movingObstacle.body.setImmovable(true)
         this.movingObstacle.body.setVelocityX(2)
 
-        // check for screen edges and reverse direction if needed
+        // check for screen edges and reverse direction
         this.physics.world.on('worldbounds', (body) => {
             if (body.gameObject === this.movingObstacle) {
                 // reverse direction when hitting screen edges
                 this.movingObstacle.body.velocity.x *= -1
             }
         })
-
 
         // add one-way
         this.oneWay = this.physics.add.sprite(width/2, height/4*3, 'oneway')
@@ -70,6 +72,8 @@ class Play extends Phaser.Scene {
 
         // add pointer input
         this.input.on('pointerdown', (pointer) => {
+            this.shotCount++
+
             let shotDirection = pointer.x <= this.ball.x ? -1 : 1
             // let shotDirection = pointer.y <= this.ball.y ? 1 : -1
             this.ball.body.setVelocityX(shotDirection * Phaser.Math.Between(this.SHOT_VELOCITY_X / 2, this.SHOT_VELOCITY_X))
@@ -80,6 +84,7 @@ class Play extends Phaser.Scene {
 
         // cup/ball collision
         this.physics.add.collider(this.ball, this.cup, (ball, cup) => {
+            this.successfulShots++
             this.resetBall()
         })
 
@@ -92,6 +97,8 @@ class Play extends Phaser.Scene {
         // ball/one-way collision
         this.physics.add.collider(this.ball, this.oneWay)
         
+        // Create a text object to display the score
+        this.scoreText = this.add.text(16, 16, '', { fontSize: '18px', fill: '#fff' })
     }
 
     update() {
@@ -102,15 +109,23 @@ class Play extends Phaser.Scene {
             // Reverse the velocity to make it bounce
             this.movingObstacle.body.velocity.x *= -1
         }
-    }
 
-    resetBall() {
+         // Calculate successful shot percentage
+         const percentage = (this.successfulShots / this.shotCount) * 100 || 0
+    
+         // Display shot count, successful shots, and percentage
+         this.scoreText.setText(`Shots: ${this.shotCount}\nSuccessful Shots: ${this.successfulShots}\nSuccess Percentage: ${percentage.toFixed(2)}%`)
+
+    }
+    
     // Reset the ball to its initial position w/ velocity
+    resetBall() {
     this.ball.x = width / 2
     this.ball.y = height - height / 10
     this.ball.body.setVelocity(0, 0)
     }
 }
+
 /*
 CODE CHALLENGE
 Try to implement at least 3/4 of the following features during the remainder of class (hint: each takes roughly 15 or fewer lines of code to implement):
